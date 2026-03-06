@@ -41,24 +41,20 @@ export class PlayListProject extends DDDSuper(I18NMixin(LitElement)) {
     };
   }
 
-  firstUpdated() {
+  async firstUpdated() {
     this.slides = Array.from(this.querySelectorAll("play-list-slide"));
     this.slideCount = this.slides.length;
-    if (this.index >= this.slideCount) {
-      this.index = Math.max(0, this.slideCount - 1);
-    }
+    this.slides.forEach((slide, i) => {
+      slide.active = i === this.index;
+    });
   }
 
-  renderSlide(slide, i) {
-    const top = slide.getAttribute("top-heading");
-    const sub = slide.getAttribute("sub-heading");
-    return html`
-      <div class="slide-panel ${i === this.index ? "active" : ""}">
-        ${top ? html`<p class="slide-top-heading">${top}</p>` : ""}
-        ${sub ? html`<h2 class="slide-sub-heading">${sub}</h2>` : ""}
-        <div class="slide-body" .innerHTML="${slide.innerHTML}"></div>
-      </div>
-      `;
+  updated(changedProperties) {
+    if (changedProperties.has("index")) {
+      this.slides.forEach((slide, i) => {
+        slide.active = i === this.index;
+      });
+    }
   }
 
   prevSlide() {
@@ -143,53 +139,11 @@ export class PlayListProject extends DDDSuper(I18NMixin(LitElement)) {
         display: flex;
         flex-direction: column;
       }
-      .slide-panel {
-        display: none;
-        flex-direction: column;
-        flex: 1;
-      }
-      .slide-panel.active {
-        display: flex;
-      }
-      .slide-top-heading {
-        margin: 0;
-        font-size: var(--ddd-font-size-xs);
-        font-weight: var(--ddd-font-weight-bold);
-        color: var(--ddd-theme-default-beaver80);
-        text-transform: uppercase;
-      }
-      .slide-sub-heading {
-        margin: 0;
-        font-size: var(--ddd-font-size-xl);
-        font-weight: var(--ddd-font-weight-bold);
-        color: var(--ddd-theme-default-beaverBlue);
-      }
-      .slide-body {
-        margin: 0;
-        flex: 1;
-        overflow-y: auto;
-        width: 100%;
-        max-width: 60ch;
-        font-size: var(--ddd-font-size-xs);
-        color: var(--ddd-theme-default-coalyGray);
-      }
       .play-list-footer {
         padding: 0 var(--ddd-spacing-8) var(--ddd-spacing-8);
         display: flex;
         justify-content: left;
         gap: var(--ddd-spacing-2);
-      }
-      .slide-indicator {
-        width: 12px;
-        height: 12px;
-        border-radius: 50%;
-        background-color: var(--ddd-theme-default-limestoneGray);
-        opacity: 0.5;
-        border: none;
-        cursor: pointer;
-      }
-      .slide-indicator.active {
-        background-color: var(--ddd-theme-default-beaverBlue);
       }
     `];
   }
@@ -197,24 +151,28 @@ export class PlayListProject extends DDDSuper(I18NMixin(LitElement)) {
   // Lit render the HTML
   render() {
     return html`
-    <div class="wrapper">
-      <div class="play-list-outer">
-        <button class="navigation-button" @click="${this.prevSlide}">&#8592;</button>
-        <div class="play-list-shell" @keydown="${this.handleKeyDown}" tabindex="0">
-          <div class="play-list-body">
-            <div class="slide-viewport">
-              ${this.slides.map((slide, i) => this.renderSlide(slide, i))}
+      <div class="wrapper">
+        <div class="play-list-outer">
+          <button class="navigation-button" @click="${this.prevSlide}">&#8592;</button>
+          <div class="play-list-shell" @keydown="${this.handleKeyDown}" tabindex="0"
+              @indicator-clicked="${(e) => this.goToSlide(e.detail.index)}">
+            <div class="play-list-body">
+              <div class="slide-viewport">
+                <slot></slot>
+              </div>
+            </div>
+            <div class="play-list-footer">
+              ${this.slides.map((_, i) => html`
+                <play-list-indicator
+                  index="${i}"
+                  ?active="${i === this.index}">
+                </play-list-indicator>
+              `)}
             </div>
           </div>
-          <div class="play-list-footer">
-            ${this.slides.map((slide, i) => html`
-              <button class="slide-indicator ${i === this.index ? "active" : ""}" @click="${() => this.goToSlide(i)}"></button>
-            `)}
-          </div>
+          <button class="navigation-button" @click="${this.nextSlide}">&#8594;</button>
+        </div>
       </div>
-        <button class="navigation-button" @click="${this.nextSlide}">&#8594;</button>
-      </div>
-    </div>
     `;
   }
 }
